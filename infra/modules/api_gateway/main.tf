@@ -220,3 +220,21 @@ resource "aws_apigatewayv2_route" "post_perfil_route" {
   authorization_type = "JWT"
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
+
+# 24. DELETE /turmas/{turma_id}/membros/{aluno_id} — mentor remove aluno da turma
+resource "aws_apigatewayv2_route" "delete_turma_membro_route" {
+  api_id             = aws_apigatewayv2_api.http_api.id
+  route_key          = "DELETE /turmas/{turma_id}/membros/{aluno_id}"
+  target             = "integrations/${aws_apigatewayv2_integration.lambda_gerenciar_turmas.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+# 25. GET /perfil — busca nome de perfil salvo do usuário
+resource "aws_apigatewayv2_route" "get_perfil_route" {
+  api_id             = aws_apigatewayv2_api.http_api.id
+  route_key          = "GET /perfil"
+  target             = "integrations/${aws_apigatewayv2_integration.lambda_gerenciar_turmas.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}

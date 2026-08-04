@@ -61,10 +61,12 @@ jobs:
           aws-region: us-east-1
 
       - name: Deploy to S3
+        if: github.event_name == 'push'
         run: |
           # Syncs the built React app to S3
           aws s3 sync frontend/dist s3://${{ secrets.S3_BUCKET_NAME }} --delete
 
       - name: Invalidate CloudFront Cache
+        if: github.event_name == 'push'
         run: |
           aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_ID }} --paths "/*"
