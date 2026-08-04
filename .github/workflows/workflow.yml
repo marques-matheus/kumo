@@ -47,6 +47,13 @@ jobs:
           VITE_COGNITO_CLIENT_ID_MENTOR: ${{ secrets.VITE_COGNITO_CLIENT_ID_MENTOR }}
           VITE_REDIRECT_URI: ${{ secrets.VITE_REDIRECT_URI }}
 
+      - name: Debug OIDC token
+        run: |
+          echo "Repo: $GITHUB_REPOSITORY"
+          echo "Ref: $GITHUB_REF"
+          echo "Actor: $GITHUB_ACTOR"
+          echo "Role ARN starts with: $(echo '${{ secrets.AWS_ROLE_ARN }}' | cut -c1-25)..."
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
