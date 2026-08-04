@@ -21,7 +21,7 @@ export default function ProfilePage() {
     async function loadMinhasTurmas() {
       setLoadingTurmas(true)
       try {
-        const res = await apiFetch<Turma[]>('/turmas/minhas')
+        const res = await apiFetch<Turma[]>('/turmas')
         setMinhasTurmas(res || [])
       } catch (err) {
         console.error('Erro ao carregar minhas turmas', err)
@@ -45,7 +45,7 @@ export default function ProfilePage() {
       alert('Você entrou na turma com sucesso!')
       setCodigoConvite('')
       
-      const res = await apiFetch<Turma[]>('/turmas/minhas')
+      const res = await apiFetch<Turma[]>('/turmas')
       setMinhasTurmas(res || [])
     } catch (err: any) {
       alert(err.message || 'Erro ao entrar na turma. Verifique o código.')

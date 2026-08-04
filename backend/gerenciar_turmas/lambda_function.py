@@ -279,6 +279,75 @@ def entrar_turma(claims, body):
     })
 
 
+def remover_aluno(claims, turma_id, aluno_id):
+    """DELETE /turmas/{turma_id}/membros/{aluno_id} — Mentor remove aluno da turma."""
+    if not is_mentor(claims):
+        return resp(403, {'mensagem': 'Apenas Mentores podem remover alunos.'})
+
+    if not turma_id or not aluno_id:
+        return resp(400, {'mensagem': "Parâmetros 'turma_id' e 'aluno_id' obrigatórios."})
+
+    sub = claims.get('sub', '')
+
+    # Verifica que o mentor é dono da turma
+    meta_resp = dynamodb.get_item(
+        TableName=TABLE_NAME,
+        Key={'PK': {'S': f'TURMA#{turma_id}'}, 'SK': {'S': 'META'}}
+    )
+    if 'Item' not in meta_resp:
+        return resp(404, {'mensagem': 'Turma não encontrada.'})
+
+    turma_meta = deser(meta_resp['Item'])
+    if turma_meta.get('mentor_id') != sub:
+        return resp(403, {'mensagem': 'Acesso negado. Esta turma pertence a outro mentor.'})
+
+    # Verifica se o aluno é membro da turma
+    membro_resp = dynamodb.get_item(
+        TableName=TABLE_NAME,
+        Key={'PK': {'S': f'TURMA#{turma_id}'}, 'SK': {'S': f'ALUNO#{aluno_id}'}}
+    )
+    if 'Item' not in membro_resp:
+        return resp(404, {'mensagem': 'Aluno não encontrado nesta turma.'})
+
+    # Remove o item de membro da turma: TURMA#<id> / ALUNO#<sub>
+    dynamodb.delete_item(
+        TableName=TABLE_NAME,
+        Key={'PK': {'S': f'TURMA#{turma_id}'}, 'SK': {'S': f'ALUNO#{aluno_id}'}}
+    )
+
+    # Remove o índice reverso: ALUNO#<sub> / TURMA#<id>
+    try:
+        dynamodb.delete_item(
+            TableName=TABLE_NAME,
+            Key={'PK': {'S': f'ALUNO#{aluno_id}'}, 'SK': {'S': f'TURMA#{turma_id}'}}
+        )
+    except Exception as e:
+        print(f"Aviso: falha ao remover índice reverso aluno→turma: {e}")
+
+    print(f"Aluno {aluno_id} removido da turma {turma_id} pelo mentor {sub}")
+    return resp(200, {'mensagem': 'Aluno removido da turma com sucesso.'})
+
+
+def buscar_perfil(claims):
+    """GET /perfil — retorna o nome salvo do usuário, se existir."""
+    sub = claims.get('sub', '')
+    email = claims.get('email', '')
+
+    try:
+        item_resp = dynamodb.get_item(
+            TableName=TABLE_NAME,
+            Key={'PK': {'S': f'USER#{sub}'}, 'SK': {'S': 'PERFIL'}}
+        )
+        if 'Item' in item_resp:
+            d = deser(item_resp['Item'])
+            return resp(200, {'nome': d.get('nome', ''), 'email': email})
+    except Exception as e:
+        print(f"Erro ao buscar perfil do usuário {sub}: {e}")
+
+    # Nenhum perfil salvo ainda — retorna email como fallback
+    return resp(200, {'nome': '', 'email': email})
+
+
 def atualizar_perfil(claims, body):
     """POST /perfil — atualiza o nome do usuário e replica nas turmas onde é aluno."""
     nome = (body.get('nome') or '').strip()
@@ -352,8 +421,14 @@ def lambda_handler(event, context):
         elif route_key == 'POST /turmas/entrar':
             return entrar_turma(claims, body)
 
+        elif route_key == 'DELETE /turmas/{turma_id}/membros/{aluno_id}':
+            return remover_aluno(claims, path_params.get('turma_id', ''), path_params.get('aluno_id', ''))
+
         elif route_key == 'POST /perfil':
             return atualizar_perfil(claims, body)
+
+        elif route_key == 'GET /perfil':
+            return buscar_perfil(claims)
 
         else:
             return resp(404, {'mensagem': f'Rota não encontrada: {route_key}'})

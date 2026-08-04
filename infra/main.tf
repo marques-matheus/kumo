@@ -1,3 +1,18 @@
+module "frontend" {
+  source = "./modules/frontend"
+
+  bucket_name = "simulados-aws-frontend-web" # Mude caso seu bucket criado no console tenha outro nome
+  environment = "prod"
+}
+
+module "oidc_github" {
+  source = "./modules/oidc_github"
+
+  github_repo          = "marques-matheus/simulados-aws"
+  role_name            = "github-actions-simulados-role" # Mude caso a role do console tenha outro nome
+  create_oidc_provider = true                            # Mude para false caso não queira importar um provedor OIDC já existente
+}
+
 module "cognito_simulados" {
   source = "./modules/cognito"
 
@@ -47,9 +62,13 @@ module "api_gateway" {
 }
 
 # Outputs
-output "url_da_api"          { value = "${module.api_gateway.api_url}/questoes" }
-output "url_da_api_corrigir" { value = "${module.api_gateway.api_url}/corrigir" }
-output "url_da_api_historico"{ value = "${module.api_gateway.api_url}/historico/{aluno_id}" }
-output "url_da_api_dashboard"{ value = "${module.api_gateway.api_url}/dashboard/turma" }
-output "url_da_api_turmas"   { value = "${module.api_gateway.api_url}/turmas" }
-output "client_id_mentor"    { value = module.cognito_simulados.client_id_mentor }
+output "url_da_api"              { value = "${module.api_gateway.api_url}/questoes" }
+output "url_da_api_corrigir"     { value = "${module.api_gateway.api_url}/corrigir" }
+output "url_da_api_historico"    { value = "${module.api_gateway.api_url}/historico/{aluno_id}" }
+output "url_da_api_dashboard"    { value = "${module.api_gateway.api_url}/dashboard/turma" }
+output "url_da_api_turmas"       { value = "${module.api_gateway.api_url}/turmas" }
+output "client_id_mentor"        { value = module.cognito_simulados.client_id_mentor }
+output "frontend_s3_bucket"      { value = module.frontend.bucket_name }
+output "frontend_cloudfront_id"  { value = module.frontend.cloudfront_id }
+output "frontend_cloudfront_url" { value = "https://${module.frontend.cloudfront_domain_name}" }
+output "github_actions_role_arn" { value = module.oidc_github.role_arn }

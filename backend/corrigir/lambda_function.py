@@ -231,7 +231,7 @@ CORS_HEADERS = {
     'Content-Type': 'application/json'
 }
 
-SIMULADOS_TABLE = 'Simulados_AWS'
+SIMULADOS_TABLE = 'Simulados_AWS'  # tabela principal de questoes
 
 
 def lambda_handler(event, context):

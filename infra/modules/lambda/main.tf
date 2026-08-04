@@ -139,6 +139,7 @@ resource "aws_lambda_function" "get_questoes" {
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.12"
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  timeout          = 10
 }
 
 resource "aws_lambda_function" "corrigir_prova" {
@@ -148,6 +149,7 @@ resource "aws_lambda_function" "corrigir_prova" {
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.12"
   source_code_hash = data.archive_file.lambda_corrigir_zip.output_base64sha256
+  timeout          = 30
 }
 
 resource "aws_lambda_function" "get_historico_aluno" {
@@ -157,6 +159,7 @@ resource "aws_lambda_function" "get_historico_aluno" {
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.12"
   source_code_hash = data.archive_file.lambda_get_historico_zip.output_base64sha256
+  timeout          = 15
 }
 
 resource "aws_lambda_function" "get_dashboard_turma" {
@@ -166,6 +169,7 @@ resource "aws_lambda_function" "get_dashboard_turma" {
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.12"
   source_code_hash = data.archive_file.lambda_dashboard_turma_zip.output_base64sha256
+  timeout          = 15
 }
 
 # Lambda para CRUD de turmas (criar, listar, entrar via convite, remover aluno)
@@ -176,6 +180,7 @@ resource "aws_lambda_function" "gerenciar_turmas" {
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.12"
   source_code_hash = data.archive_file.lambda_gerenciar_turmas_zip.output_base64sha256
+  timeout          = 15
 }
 
 resource "aws_lambda_function" "cognito_pre_token" {
@@ -185,6 +190,7 @@ resource "aws_lambda_function" "cognito_pre_token" {
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.12"
   source_code_hash = data.archive_file.lambda_cognito_pre_token_zip.output_base64sha256
+  timeout          = 10
 }
 
 resource "aws_lambda_permission" "allow_cognito" {
