@@ -1,8 +1,17 @@
 module "frontend" {
   source = "./modules/frontend"
 
-  bucket_name = "simulados-aws-frontend-web" # Mude caso seu bucket criado no console tenha outro nome
+  bucket_name = "aws-simulados-150426"
   environment = "prod"
+}
+
+module "oidc_github" {
+  source = "./modules/oidc_github"
+
+  github_repo                = "marques-matheus/simulados-aws"
+  role_name                  = "github-actions-simulados-role"
+  create_oidc_provider       = false
+  existing_oidc_provider_arn = "arn:aws:iam::641820721432:oidc-provider/token.actions.githubusercontent.com"
 }
 
 module "cognito_simulados" {
@@ -63,3 +72,4 @@ output "client_id_mentor"        { value = module.cognito_simulados.client_id_me
 output "frontend_s3_bucket"      { value = module.frontend.bucket_name }
 output "frontend_cloudfront_id"  { value = module.frontend.cloudfront_id }
 output "frontend_cloudfront_url" { value = "https://${module.frontend.cloudfront_domain_name}" }
+output "github_actions_role_arn" { value = module.oidc_github.role_arn }
