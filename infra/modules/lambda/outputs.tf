@@ -43,6 +43,15 @@ output "lambda_gerenciar_turmas_function_name" {
   value = aws_lambda_function.gerenciar_turmas.function_name
 }
 
+output "lambda_get_simulado_detalhes_invoke_arn" {
+  value       = aws_lambda_function.get_simulado_detalhes.invoke_arn
+  description = "ARN de invocação da Lambda GetSimuladoDetalhes"
+}
+
+output "lambda_get_simulado_detalhes_function_name" {
+  value = aws_lambda_function.get_simulado_detalhes.function_name
+}
+
 output "lambda_cognito_pre_token_arn" {
   value       = aws_lambda_function.cognito_pre_token.arn
   description = "ARN da Lambda de Pre Token Generation"

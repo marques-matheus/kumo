@@ -163,24 +163,88 @@ def buscar_turmas_do_aluno(aluno_id):
         return []
 
 
-def salvar_historico(claims, prova, resultado, dominios, tempo_segundos):
+def salvar_detalhes_simulado(claims, prova, simulado_sk, questoes_ids, respostas_usuario, itens_db, resultado):
+    """
+    Persiste os detalhes completos do simulado na tabela Simulados_Detalhes.
+    Salva apenas as questões erradas e puladas para economizar espaço e
+    permitir revisão focada. Questões corretas têm apenas status salvo.
+
+    Tolerante a falhas — exceções são logadas mas não propagadas.
+    """
+    try:
+        aluno_id = claims.get('sub', '')
+        if not aluno_id:
+            return
+
+        # Mapeia SK -> gabarito (índices corretos) para lookup rápido
+        gabarito = {}
+        for sk, item in itens_db.items():
+            opcoes = item.get('opcoes', [])
+            respostas_corretas_db = item.get('respostas_corretas', [])
+            gabarito[sk] = sorted(list(gabarito_para_indices(respostas_corretas_db, opcoes)))
+
+        # Converte respostas_usuario de {str(idx): ...} para {str(idx): [int, ...]}
+        respostas_normalizadas = {}
+        for idx_str, resp in respostas_usuario.items():
+            if resp is not None:
+                respostas_normalizadas[idx_str] = sorted(list(normalizar(resp)))
+
+        item = {
+            'PK':           {'S': f'USER#{aluno_id}'},
+            'SK':           {'S': simulado_sk},
+            'aluno_id':     {'S': aluno_id},
+            'cert':         {'S': prova},
+            'data_iso':     {'S': simulado_sk.split('#')[0] if '#' in simulado_sk else ''},
+            'score':        {'N': str(resultado['score'])},
+            'corretas':     {'N': str(resultado['corretas'])},
+            'erradas':      {'N': str(resultado['erradas'])},
+            'puladas':      {'N': str(resultado['puladas'])},
+            'total':        {'N': str(resultado['total'])},
+            # questoes_ids: lista ordenada de SKs para reconstruir a prova
+            'questoes_ids': {'L': [{'S': sk} for sk in questoes_ids]},
+            # respostas: {str(idx): [int, ...]} — apenas respostas dadas
+            'respostas':    {'M': {
+                k: {'L': [{'N': str(v)} for v in vals]}
+                for k, vals in respostas_normalizadas.items()
+            }},
+            # gabarito: {SK: [int, ...]} — índices corretos por questão
+            'gabarito':     {'M': {
+                sk: {'L': [{'N': str(i)} for i in indices]}
+                for sk, indices in gabarito.items()
+            }},
+            # TTL: 90 dias para expiração automática no DynamoDB
+            'ttl':          {'N': str(int(__import__('time').time()) + 90 * 24 * 3600)},
+        }
+
+        dynamodb.put_item(TableName='Simulados_Detalhes', Item=item)
+        print(f"Detalhes do simulado salvos: aluno={aluno_id} sk={simulado_sk} cert={prova}")
+
+    except Exception as e:
+        print(f"AVISO: falha ao salvar detalhes do simulado para aluno={claims.get('sub')}: {e}")
+
+
+def salvar_historico(claims, prova, resultado, dominios, tempo_segundos) -> str | None:
     """
     Persiste o resultado do simulado na tabela Historico_Simulados.
 
     Se o aluno pertence a N turmas (até 2), grava N itens com GSI1PKs distintos.
     Se o aluno não tem turma, grava apenas o item principal (sem GSI1PK).
     Tolerante a falhas — exceções são logadas mas não propagadas.
+
+    Retorna o SK do item gravado (usado para vincular Simulados_Detalhes),
+    ou None em caso de falha.
     """
     try:
         aluno_id = claims.get('sub', '')
         email    = claims.get('email', '')
         data_iso = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
         uid      = str(uuid.uuid4())
+        simulado_sk = f'{data_iso}#{uid}'
 
         # Campos comuns a todos os itens
         item_base = {
             'PK':           {'S': f'USER#{aluno_id}'},
-            'SK':           {'S': f'{data_iso}#{uid}'},
+            'SK':           {'S': simulado_sk},
             'aluno_id':     {'S': aluno_id},
             'email':        {'S': email},
             'certificacao': {'S': prova},
@@ -217,9 +281,12 @@ def salvar_historico(claims, prova, resultado, dominios, tempo_segundos):
             dynamodb.put_item(TableName='Historico_Simulados', Item=item_base)
             print(f"Histórico salvo (sem turma): aluno={aluno_id} cert={prova} score={resultado['score']}")
 
+        return simulado_sk
+
     except Exception as erro:
         # Falha de persistência não interrompe o retorno do resultado ao aluno
         print(f"AVISO: falha ao salvar histórico para aluno={claims.get('sub')}: {erro}")
+        return None
 
 
 # --- Conexões reaproveitadas entre invocações ---
@@ -304,7 +371,17 @@ def lambda_handler(event, context):
         dominios = calcular_dominios(questoes_ids, itens_db, resultado['detalhes'])
 
         # 6. Persiste histórico (tolerante a falhas — não bloqueia o retorno)
-        salvar_historico(claims, prova, resultado, dominios, tempo_segundos)
+        simulado_sk = salvar_historico(claims, prova, resultado, dominios, tempo_segundos)
+
+        # 7. Persiste detalhes completos para revisão posterior
+        if simulado_sk:
+            salvar_detalhes_simulado(
+                claims, prova, simulado_sk,
+                questoes_ids, respostas_usuario, itens_db, resultado
+            )
+
+        # 8. Inclui o simulado_id na resposta para o frontend redirecionar para revisão
+        resultado['simulado_id'] = simulado_sk
 
         return {
             'statusCode': 200,

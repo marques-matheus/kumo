@@ -69,7 +69,39 @@ resource "aws_dynamodb_table" "historico_simulados" {
   }
 }
 
-# Tabela de turmas
+# Tabela para detalhes completos de cada simulado (questões + respostas + gabarito)
+# Padrões de acesso:
+#   Buscar simulado de um aluno: PK = USER#<sub>, SK = <data>#<uuid>
+#
+# TTL habilitado: itens expiram automaticamente após 90 dias
+resource "aws_dynamodb_table" "simulados_detalhes" {
+  name         = "Simulados_Detalhes"
+  billing_mode = "PAY_PER_REQUEST"
+
+  hash_key  = "PK"
+  range_key = "SK"
+
+  attribute {
+    name = "PK"
+    type = "S"
+  }
+
+  attribute {
+    name = "SK"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+
+  tags = {
+    Environment = "Mentoria"
+    Project     = "SimuladosAWS"
+  }
+}
+
 # Padrões de acesso (single-table design):
 #   Listar turmas de um mentor:  PK = MENTOR#<sub>,  SK begins_with TURMA#
 #   Metadata de uma turma:       PK = TURMA#<id>,    SK = META

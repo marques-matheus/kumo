@@ -18,6 +18,16 @@ output "historico_table_name" {
   description = "Nome da tabela Historico_Simulados"
 }
 
+output "simulados_detalhes_table_arn" {
+  value       = aws_dynamodb_table.simulados_detalhes.arn
+  description = "ARN da tabela Simulados_Detalhes, usado para permissões IAM"
+}
+
+output "simulados_detalhes_table_name" {
+  value       = aws_dynamodb_table.simulados_detalhes.name
+  description = "Nome da tabela Simulados_Detalhes"
+}
+
 output "turmas_table_arn" {
   value       = aws_dynamodb_table.turmas.arn
   description = "ARN da tabela Turmas, usado para permissões IAM"

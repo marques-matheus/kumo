@@ -23,6 +23,7 @@ import HomePage from './pages/HomePage'
 import ExamPage from './pages/ExamPage'
 import ResultPage from './pages/ResultPage'
 import ReviewPage from './pages/ReviewPage'
+import ReviewHistoricoPage from './pages/ReviewHistoricoPage'
 import ProgressPage from './pages/ProgressPage'
 import ProfilePage from './pages/ProfilePage'
 import DashboardTurmaPage from './pages/DashboardTurmaPage'
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/exam" element={<ExamPage />} />
           <Route path="/result" element={<ResultPage />} />
           <Route path="/review" element={<ReviewPage />} />
+          <Route path="/review-historico/:simulado_id" element={<ReviewHistoricoPage />} />
           <Route path="/progress" element={<ProgressPage />} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 

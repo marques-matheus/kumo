@@ -30,6 +30,12 @@ data "archive_file" "lambda_gerenciar_turmas_zip" {
   output_path = "${path.root}/../backend/gerenciar_turmas.zip"
 }
 
+data "archive_file" "lambda_get_simulado_detalhes_zip" {
+  type        = "zip"
+  source_dir  = "${path.root}/../backend/get_simulado_detalhes"
+  output_path = "${path.root}/../backend/get_simulado_detalhes.zip"
+}
+
 data "archive_file" "lambda_cognito_pre_token_zip" {
   type        = "zip"
   source_dir  = "${path.root}/../backend/cognito_pre_token"
@@ -80,6 +86,21 @@ resource "aws_iam_role_policy" "historico_policy" {
         var.historico_table_arn,
         "${var.historico_table_arn}/index/*"
       ]
+    }]
+  })
+}
+
+# Permissões na tabela Simulados_Detalhes (PutItem via corrigir + GetItem via get_simulado_detalhes)
+resource "aws_iam_role_policy" "simulados_detalhes_policy" {
+  name = "policy_simulados_detalhes"
+  role = aws_iam_role.lambda_exec_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["dynamodb:PutItem", "dynamodb:GetItem"]
+      Resource = var.simulados_detalhes_table_arn
     }]
   })
 }
@@ -180,6 +201,16 @@ resource "aws_lambda_function" "gerenciar_turmas" {
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.12"
   source_code_hash = data.archive_file.lambda_gerenciar_turmas_zip.output_base64sha256
+  timeout          = 15
+}
+
+resource "aws_lambda_function" "get_simulado_detalhes" {
+  filename         = data.archive_file.lambda_get_simulado_detalhes_zip.output_path
+  function_name    = "GetSimuladoDetalhes"
+  role             = aws_iam_role.lambda_exec_role.arn
+  handler          = "lambda_function.lambda_handler"
+  runtime          = "python3.12"
+  source_code_hash = data.archive_file.lambda_get_simulado_detalhes_zip.output_base64sha256
   timeout          = 15
 }
 

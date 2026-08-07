@@ -8,7 +8,7 @@ module "frontend" {
 module "oidc_github" {
   source = "./modules/oidc_github"
 
-  github_repo                = "marques-matheus/simulados-aws"
+  github_repo                = "marques-matheus*/kumo*"
   role_name                  = "github-actions-simulados-role"
   create_oidc_provider       = false
   existing_oidc_provider_arn = "arn:aws:iam::641820721432:oidc-provider/token.actions.githubusercontent.com"
@@ -34,10 +34,11 @@ module "dynamodb_simulados" {
 }
 
 module "lambda_get_questoes" {
-  source              = "./modules/lambda"
-  dynamodb_table_arn  = module.dynamodb_simulados.table_arn
-  historico_table_arn = module.dynamodb_simulados.historico_table_arn
-  turmas_table_arn    = module.dynamodb_simulados.turmas_table_arn
+  source                        = "./modules/lambda"
+  dynamodb_table_arn            = module.dynamodb_simulados.table_arn
+  historico_table_arn           = module.dynamodb_simulados.historico_table_arn
+  turmas_table_arn              = module.dynamodb_simulados.turmas_table_arn
+  simulados_detalhes_table_arn  = module.dynamodb_simulados.simulados_detalhes_table_arn
 }
 
 module "api_gateway" {
@@ -60,6 +61,9 @@ module "api_gateway" {
 
   lambda_gerenciar_turmas_invoke_arn    = module.lambda_get_questoes.lambda_gerenciar_turmas_invoke_arn
   lambda_gerenciar_turmas_function_name = module.lambda_get_questoes.lambda_gerenciar_turmas_function_name
+
+  lambda_get_simulado_detalhes_invoke_arn    = module.lambda_get_questoes.lambda_get_simulado_detalhes_invoke_arn
+  lambda_get_simulado_detalhes_function_name = module.lambda_get_questoes.lambda_get_simulado_detalhes_function_name
 }
 
 # Outputs
@@ -67,7 +71,8 @@ output "url_da_api"              { value = "${module.api_gateway.api_url}/questo
 output "url_da_api_corrigir"     { value = "${module.api_gateway.api_url}/corrigir" }
 output "url_da_api_historico"    { value = "${module.api_gateway.api_url}/historico/{aluno_id}" }
 output "url_da_api_dashboard"    { value = "${module.api_gateway.api_url}/dashboard/turma" }
-output "url_da_api_turmas"       { value = "${module.api_gateway.api_url}/turmas" }
+output "url_da_api_turmas"              { value = "${module.api_gateway.api_url}/turmas" }
+output "url_da_api_simulados_detalhes" { value = "${module.api_gateway.api_url}/simulados/{simulado_id}" }
 output "client_id_mentor"        { value = module.cognito_simulados.client_id_mentor }
 output "frontend_s3_bucket"      { value = module.frontend.bucket_name }
 output "frontend_cloudfront_id"  { value = module.frontend.cloudfront_id }

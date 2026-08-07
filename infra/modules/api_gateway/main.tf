@@ -238,3 +238,30 @@ resource "aws_apigatewayv2_route" "get_perfil_route" {
   authorization_type = "JWT"
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
 }
+
+# 26. Integração com a Lambda GetSimuladoDetalhes
+resource "aws_apigatewayv2_integration" "lambda_get_simulado_detalhes" {
+  api_id                 = aws_apigatewayv2_api.http_api.id
+  integration_type       = "AWS_PROXY"
+  payload_format_version = "2.0"
+  integration_uri        = var.lambda_get_simulado_detalhes_invoke_arn
+  integration_method     = "POST"
+}
+
+# 27. GET /simulados/{simulado_id} — retorna detalhes completos de um simulado salvo
+resource "aws_apigatewayv2_route" "get_simulado_detalhes_route" {
+  api_id             = aws_apigatewayv2_api.http_api.id
+  route_key          = "GET /simulados/{simulado_id}"
+  target             = "integrations/${aws_apigatewayv2_integration.lambda_get_simulado_detalhes.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_jwt.id
+}
+
+# 28. Permissão para o API Gateway invocar a Lambda GetSimuladoDetalhes
+resource "aws_lambda_permission" "api_gw_get_simulado_detalhes" {
+  statement_id  = "AllowExecutionFromAPIGatewayGetSimuladoDetalhes"
+  action        = "lambda:InvokeFunction"
+  function_name = var.lambda_get_simulado_detalhes_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http_api.execution_arn}/*/*"
+}

@@ -53,6 +53,16 @@ variable "lambda_get_dashboard_turma_function_name" {
   description = "Nome da função Lambda GetDashboardTurma"
 }
 
+variable "lambda_get_simulado_detalhes_invoke_arn" {
+  type        = string
+  description = "ARN de invocação da Lambda GetSimuladoDetalhes"
+}
+
+variable "lambda_get_simulado_detalhes_function_name" {
+  type        = string
+  description = "Nome da função Lambda GetSimuladoDetalhes"
+}
+
 variable "lambda_gerenciar_turmas_invoke_arn" {
   type        = string
   description = "ARN de invocação da Lambda GerenciarTurmas"

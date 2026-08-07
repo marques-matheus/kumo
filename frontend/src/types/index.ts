@@ -27,6 +27,34 @@ export interface Resultado {
   erradas: number
   puladas: number
   detalhes: DetalheQuestao[]
+  simulado_id?: string   // SK do DynamoDB — retornado pelo backend após POST /corrigir
+}
+
+// ─── Simulado Detalhes (revisão de histórico) ─────────────────────────────────
+
+export interface QuestaoRevisao {
+  id: string
+  pergunta: string
+  opcoes: string[]
+  temas: string[]
+  dificuldade: string
+  status: 'correta' | 'errada' | 'pulada'
+  resposta_usuario: number[] | null
+  resposta_correta: number[]
+  explicacao: string
+}
+
+export interface SimuladoDetalhes {
+  simulado_id: string
+  cert: string
+  data_iso: string
+  score: number
+  corretas: number
+  erradas: number
+  puladas: number
+  total: number
+  tempo_segundos: number | null
+  questoes: QuestaoRevisao[]
 }
 
 export interface ExamConfig {

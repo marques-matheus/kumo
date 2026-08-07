@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { CERT_META, CERT_CODES } from '../utils/certMeta'
 import { type PerformanceRecord } from '../utils/antiRepeat'
 import { Line } from 'react-chartjs-2'
@@ -24,24 +25,31 @@ import { useAuth } from '../context/AuthContext'
 import { useApi } from '../hooks/useApi'
 import LoadingSpinner from '../components/LoadingSpinner'
 
+interface HistoricoItem extends PerformanceRecord {
+  simulado_id: string
+}
+
 export default function ProgressPage() {
   const { sub } = useAuth()
   const { apiFetch } = useApi()
-  const [data, setData] = useState<Record<string, PerformanceRecord[]>>({})
+  const navigate = useNavigate()
+  const [data, setData] = useState<Record<string, HistoricoItem[]>>({})
   const [loading, setLoading] = useState(true)
+  const [reviewLoading, setReviewLoading] = useState<string | null>(null)
 
   useEffect(() => {
     if (!sub) return
 
     apiFetch<any[]>(`/historico/${sub}`)
       .then(res => {
-        const loadedData: Record<string, PerformanceRecord[]> = {}
+        const loadedData: Record<string, HistoricoItem[]> = {}
         const items = res || []
         
         items.forEach(item => {
           const cert = item.certificacao
           if (!loadedData[cert]) loadedData[cert] = []
           loadedData[cert].push({
+            simulado_id: item.id,
             date: item.data_iso,
             score: item.score,
             correct: item.corretas,
@@ -52,8 +60,7 @@ export default function ProgressPage() {
           })
         })
         
-        // Ensure they are sorted from oldest to newest for the chart, 
-        // since the API returns newest first (ScanIndexForward=False)
+        // Garante ordem do mais antigo ao mais recente para o gráfico
         Object.keys(loadedData).forEach(cert => {
           loadedData[cert].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         })
@@ -63,6 +70,16 @@ export default function ProgressPage() {
       .catch(err => console.error("Erro ao buscar histórico:", err))
       .finally(() => setLoading(false))
   }, [sub])
+
+  async function handleRevisar(simulado_id: string) {
+    setReviewLoading(simulado_id)
+    try {
+      const encodedId = encodeURIComponent(simulado_id)
+      navigate(`/review-historico/${encodedId}`)
+    } finally {
+      setReviewLoading(null)
+    }
+  }
 
   const hasAny = Object.keys(data).length > 0
 
@@ -146,7 +163,21 @@ export default function ProgressPage() {
                             <span title="Total">Total: {h.total}</span>
                           </div>
                         </div>
-                        <div className={`progress-score ${scoreClass}`}>{h.score}%</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <div className={`progress-score ${scoreClass}`}>{h.score}%</div>
+                          <button
+                            className="btn-outline btn-sm"
+                            title="Revisar este simulado"
+                            onClick={() => handleRevisar(h.simulado_id)}
+                            disabled={reviewLoading === h.simulado_id}
+                            style={{ whiteSpace: 'nowrap', minWidth: '80px' }}
+                          >
+                            {reviewLoading === h.simulado_id
+                              ? <><i className="ph ph-spinner" /> ...</>
+                              : <><i className="ph ph-magnifying-glass" /> Revisar</>
+                            }
+                          </button>
+                        </div>
                       </div>
                     )
                   })}
