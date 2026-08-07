@@ -104,7 +104,7 @@ export default function ReviewHistoricoPage() {
             <p>Nenhuma questão encontrada para este filtro.</p>
           </div>
         ) : (
-          filtered.map((q, i) => {
+          filtered.map((q) => {
             const cls = q.status === 'pulada' ? 'ri-skipped' : q.status === 'correta' ? 'ri-correct' : 'ri-wrong'
             const statusIcon = q.status === 'pulada'
               ? <><i className="ph ph-square"/> Pulada</>
